@@ -23,3 +23,15 @@ jobs:
 
     - name: Build iOS App
       run: flutter build ios --release --no-codesign
+
+    - name: Upload to S3
+      uses: jakejarvis/s3-sync-action@master
+      with:
+        args: --acl public-read --follow-symlinks --delete
+      env:
+        AWS_S3_BUCKET: app-nelson1234
+        AWS_REGION: us-east-1
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        SOURCE_DIR: /Users/runner/work/flutter_app/flutter_app/build/ios/iphoneos/Runner.app.
+        DEST_DIR: /
