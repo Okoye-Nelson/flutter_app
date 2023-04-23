@@ -27,6 +27,10 @@ jobs:
     - name: Build APK
       run: pwd && ls
 
+    # Stop post job cleanup
+    post:
+      cleanup: false
+
     - name: Upload to S3
       uses: jakejarvis/s3-sync-action@master
       with:
@@ -38,3 +42,5 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         SOURCE_DIR: /github/workspace/build/app/outputs/flutter-apk/app-release.apk
         DEST_DIR: /
+    
+
