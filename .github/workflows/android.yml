@@ -24,6 +24,9 @@ jobs:
     - name: Build APK
       run: flutter build apk
 
+    - name: Build APK
+      run: pwd && ls
+
     - name: Upload to S3
       uses: jakejarvis/s3-sync-action@master
       with:
@@ -33,5 +36,5 @@ jobs:
         AWS_REGION: us-east-1
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        SOURCE_DIR: /github/workspace/build/app/outputs/flutter-apk/app-release.apk/ .
+        SOURCE_DIR: /github/workspace/build/app/outputs/flutter-apk/app-release.apk
         DEST_DIR: /
