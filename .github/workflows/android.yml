@@ -38,6 +38,3 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         SOURCE_DIR: /github/workspace/build/app/outputs/flutter-apk/app-release.apk/ .
         DEST_DIR: /
-
-    post:
-      cleanup: false
