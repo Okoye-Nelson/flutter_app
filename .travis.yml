@@ -1,0 +1,59 @@
+os:
+  - osx
+  - linux
+
+language: generic
+
+cache:
+  directories:
+    - $HOME/.pub-cache
+
+jobs:
+  include:
+    - stage: build and deploy Android
+      os: linux
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - lib32stdc++6
+      before_script:
+        - git clone https://github.com/flutter/flutter.git -b stable --depth 1
+        - export PATH="$PATH:`pwd`/flutter/bin"
+        - flutter doctor
+      script:
+        - flutter pub get
+        - flutter build apk
+        - pwd && cd build && ls
+      deploy:
+        provider: script
+        script: curl -sL https://raw.githubusercontent.com/jakejarvis/s3-sync-action/master/src/main.js | node -- --args="--acl public-read" --source-dir=build/app/outputs/flutter-apk/app-release.apk --bucket=app-nelson1234 --region=us-east-1 --destination-dir=/
+        skip_cleanup: true
+        on:
+          branch: main
+          
+    - stage: build and deploy iOS
+      os: osx
+      before_install:
+        - brew update
+        - brew install --HEAD usbmuxd
+        - brew unlink usbmuxd
+        - brew link usbmuxd
+        - brew install ideviceinstaller
+        - brew install ios-deploy
+        - brew install cocoapods
+      install:
+        - git clone https://github.com/flutter/flutter.git -b stable
+        - export PATH=`pwd`/flutter/bin:$PATH
+        - flutter doctor
+      script:
+        - flutter build ios --release --no-codesign
+      deploy:
+        provider: script
+        skip_cleanup: true
+        script: >
+          brew install awscli &&
+          aws s3 sync /Users/travis/build/okoye-nelson/flutter_app/build/ios/iphoneos/ s3://app-nelson1234/ --acl public-read --delete &&
+          rm -rf ~/Library/Developer/Xcode/DerivedData/
+        on:
+          branch: main
