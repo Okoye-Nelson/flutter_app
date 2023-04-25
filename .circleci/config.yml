@@ -1,0 +1,88 @@
+version: 2.1
+jobs:
+  
+  build_and_deploy_android:
+    machine: true
+    os: linux
+    environment:
+      FLUTTER_CHANNEL: stable
+      FLUTTER_HOME: /home/circleci/flutter
+      PATH: $PATH:$FLUTTER_HOME/bin
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get install -y lib32stdc++6
+            git clone -b $FLUTTER_CHANNEL https://github.com/flutter/flutter.git $FLUTTER_HOME
+            flutter doctor
+      - restore_cache:
+          keys:
+            - pub-cache-{{ checksum "pubspec.lock" }}
+      - run:
+          name: Install dependencies
+          command: flutter packages get
+      - save_cache:
+          key: pub-cache-{{ checksum "pubspec.lock" }}
+          paths:
+            - ~/.pub-cache
+      - run:
+          name: Build Android app
+          command: flutter build apk
+      - run:
+          name: Deploy Android app
+          command: |
+            curl -sL https://raw.githubusercontent.com/jakejarvis/s3-sync-action/master/src/main.js | node -- --args="--acl public-read" --source-dir=build/app/outputs/flutter-apk/app-release.apk --bucket=app-nelson1234 --region=us-east-1 --destination-dir=/
+  
+  build_and_deploy_ios:
+    macos:
+      xcode: "12.5.1"
+    environment:
+      FLUTTER_CHANNEL: stable
+      FLUTTER_HOME: /Users/distiller/flutter
+      PATH: $PATH:$FLUTTER_HOME/bin
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            brew install --HEAD usbmuxd
+            brew unlink usbmuxd
+            brew link usbmuxd
+            brew install ideviceinstaller ios-deploy cocoapods
+            git clone -b $FLUTTER_CHANNEL https://github.com/flutter/flutter.git $FLUTTER_HOME
+            flutter doctor
+      - restore_cache:
+          keys:
+            - pub-cache-{{ checksum "pubspec.lock" }}
+      - run:
+          name: Install dependencies
+          command: flutter packages get
+      - save_cache:
+          key: pub-cache-{{ checksum "pubspec.lock" }}
+          paths:
+            - ~/.pub-cache
+      - run:
+          name: Build iOS app
+          command: flutter build ios --release --no-codesign
+      - run:
+          name: Deploy iOS app
+          command: |
+            brew install awscli
+            aws s3 sync ~/project/build/ios/iphoneos/ s3://app-nelson1234/ --acl public-read --delete
+            rm -rf ~/Library/Developer/Xcode/DerivedData/
+workflows:
+  build_and_deploy:
+    jobs:
+      - build_and_deploy_android:
+          filters:
+            branches:
+              only:
+                - main
+      - build_and_deploy_ios:
+          filters:
+            branches:
+              only:
+                - main
