@@ -1,39 +1,27 @@
 version: 2.1
 jobs:
   
+jobs:
   build_and_deploy_android:
-    machine: true
-    os: linux
-    environment:
-      FLUTTER_CHANNEL: stable
-      FLUTTER_HOME: /home/circleci/flutter
-      PATH: $PATH:$FLUTTER_HOME/bin
-    working_directory: ~/project
+    executor:
+      name: android/build
     steps:
       - checkout
-      - run:
-          name: Install dependencies
+      - run: git clone https://github.com/flutter/flutter.git -b stable --depth 1
+      - run: export PATH="$PATH:`pwd`/flutter/bin"
+      - run: flutter doctor
+      - run: flutter pub get
+      - run: flutter build apk
+      - run: pwd && cd build && ls
+      - deploy:
+          name: Deploy APK to S3
           command: |
-            sudo apt-get install -y lib32stdc++6
-            git clone -b $FLUTTER_CHANNEL https://github.com/flutter/flutter.git $FLUTTER_HOME
-            flutter doctor
-      - restore_cache:
-          keys:
-            - pub-cache-{{ checksum "pubspec.lock" }}
-      - run:
-          name: Install dependencies
-          command: flutter packages get
-      - save_cache:
-          key: pub-cache-{{ checksum "pubspec.lock" }}
-          paths:
-            - ~/.pub-cache
-      - run:
-          name: Build Android app
-          command: flutter build apk
-      - run:
-          name: Deploy Android app
-          command: |
-            curl -sL https://raw.githubusercontent.com/jakejarvis/s3-sync-action/master/src/main.js | node -- --args="--acl public-read" --source-dir=build/app/outputs/flutter-apk/app-release.apk --bucket=app-nelson1234 --region=us-east-1 --destination-dir=/
+            curl -sL https://raw.githubusercontent.com/jakejarvis/s3-sync-action/master/src/main.js |
+              node -- --args="--acl public-read" --source-dir=build/app/outputs/flutter-apk/app-release.apk
+              --bucket=app-nelson1234 --region=us-east-1 --destination-dir=/
+          requires:
+            - build_and_deploy_android
+
   
   build_and_deploy_ios:
     macos:
