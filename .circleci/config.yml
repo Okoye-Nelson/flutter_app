@@ -1,9 +1,12 @@
 version: 2.1
+orbs:
+  android: circleci/android@0.2.1
+  ios: circleci/ios@1.1.0
 
 jobs:
   build_and_deploy_android:
     executor:
-      name: android/build
+      name: android/default
     steps:
       - checkout
       - run: git clone https://github.com/flutter/flutter.git -b stable --depth 1
@@ -22,13 +25,8 @@ jobs:
             - build_and_deploy_android
 
   build_and_deploy_ios:
-    macos:
-      xcode: "12.5.1"
-    environment:
-      FLUTTER_CHANNEL: stable
-      FLUTTER_HOME: /Users/distiller/flutter
-      PATH: $PATH:$FLUTTER_HOME/bin
-    working_directory: ~/project
+    executor:
+      name: ios/default
     steps:
       - checkout
       - run:
@@ -38,18 +36,8 @@ jobs:
             brew unlink usbmuxd
             brew link usbmuxd
             brew install ideviceinstaller ios-deploy cocoapods
-            git clone -b $FLUTTER_CHANNEL https://github.com/flutter/flutter.git $FLUTTER_HOME
+            git clone -b stable https://github.com/flutter/flutter.git $HOME/flutter
             flutter doctor
-      - restore_cache:
-          keys:
-            - pub-cache-{{ checksum "pubspec.lock" }}
-      - run:
-          name: Install dependencies
-          command: flutter packages get
-      - save_cache:
-          key: pub-cache-{{ checksum "pubspec.lock" }}
-          paths:
-            - ~/.pub-cache
       - run:
           name: Build iOS app
           command: flutter build ios --release --no-codesign
