@@ -1,0 +1,44 @@
+version: 2.1
+workflows:
+  build_and_deploy:
+    environment:
+      FLUTTER_VERSION: stable
+      ANDROID_HOME: /opt/android/sdk
+      PATH: $PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools
+    jobs:
+      - build_and_deploy_android:
+          name: Build and deploy Android app
+          steps:
+            - codemagic-yml/flutter@v1.1.0:
+                version: $FLUTTER_VERSION
+            - codemagic-yml/android@v1.1.0:
+                components: build-tools;30.0.2,android-30
+                licenses: android-sdk-license-.+
+            - codemagic-yml/flutter@v1.1.0:
+                command: pub-get
+            - codemagic-yml/flutter@v1.1.0:
+                command: build-apk
+            - codemagic-yml/aws-s3@v1.0.1:
+                source: build/app/outputs/flutter-apk/app-release.apk
+                destination: s3://app-nelson1234
+                accessKeyId: $AWS_ACCESS_KEY_ID
+                secretAccessKey: $AWS_SECRET_ACCESS_KEY
+                region: us-east-1
+      - build_and_deploy_ios:
+          name: Build and deploy iOS app
+          steps:
+            - codemagic-yml/flutter@v1.1.0:
+                version: $FLUTTER_VERSION
+            - codemagic-yml/xcode@v1.0.0:
+                version: "12.5.1"
+            - codemagic-yml/flutter@v1.1.0:
+                command: pub-get
+            - codemagic-yml/flutter@v1.1.0:
+                command: build-ios
+                arguments: "--release --no-codesign"
+            - codemagic-yml/aws-s3@v1.0.1:
+                source: build/ios/iphoneos/Runner.app
+                destination: s3://app-nelson1234
+                accessKeyId: $AWS_ACCESS_KEY_ID
+                secretAccessKey: $AWS_SECRET_ACCESS_KEY
+                region: us-east-1
