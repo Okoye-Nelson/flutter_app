@@ -1,6 +1,5 @@
 version: 2.1
-jobs:
-  
+
 jobs:
   build_and_deploy_android:
     executor:
@@ -22,7 +21,6 @@ jobs:
           requires:
             - build_and_deploy_android
 
-  
   build_and_deploy_ios:
     macos:
       xcode: "12.5.1"
@@ -61,6 +59,7 @@ jobs:
             brew install awscli
             aws s3 sync ~/project/build/ios/iphoneos/ s3://app-nelson1234/ --acl public-read --delete
             rm -rf ~/Library/Developer/Xcode/DerivedData/
+
 workflows:
   build_and_deploy:
     jobs:
